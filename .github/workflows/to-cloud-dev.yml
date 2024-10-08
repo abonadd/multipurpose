@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - cloud-dev
+  pull_request:
+    branches:
+      - cloud-dev
   workflow_dispatch:
 
 jobs:

@@ -1,15 +1,4 @@
-# FROM node:alpine
 
-# WORKDIR /src/app/
-
-# COPY . .
-
-# RUN npm install -g http-server
-
-# CMD ["http-server", "index.html", "-p", "8080"]
-
-
-# Usar uma imagem base do nginx
 FROM nginx:alpine
 
 COPY ./assets /usr/share/nginx/html/assets

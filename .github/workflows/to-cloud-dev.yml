@@ -1,0 +1,58 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches:
+      - cloud-dev
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v4
+      with:
+        context: ./
+        file: Dockerfile
+        push: true
+        tags: mandycv/strapi:multipurpose
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build  # Ensures deployment only runs after the build job completes successfully
+
+    steps:
+    - name: Set up SSH
+      uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+    - name: Deploy Docker Container on Ubuntu Server
+      run: |
+        ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << EOF
+          # Stop and remove the existing container if it's running
+          docker stop dev-multipurpose-container || true
+          docker rm dev-multipurpose-container || true
+
+          # Pull the latest image from Docker Hub
+          docker pull mandycv/strapi:multipurpose
+        
+          # Run the Docker container with all necessary environment variables and port mapping
+          docker run -d -p 80:80 --name dev-multipurpose-container \
+            
+            mandycv/strapi:multipurpose
+        EOF
